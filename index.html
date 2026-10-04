@@ -3,145 +3,182 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Drappr AI | Global Freight Engine</title>
-    <!-- Tailwind CSS CDN -->
+    <title>Drappr AI | Global Autonomous Logistics Engine</title>
     <script src="https://cdn.tailwindcss.com"></script>
-    <!-- Mapbox GL JS -->
     <script src="https://api.mapbox.com/mapbox-gl-js/v2.15.0/mapbox-gl.js"></script>
     <link href="https://api.mapbox.com/mapbox-gl-js/v2.15.0/mapbox-gl.css" rel="stylesheet" />
     <style>
         body { font-family: 'Inter', sans-serif; background-color: #0b0f19; color: #f3f4f6; }
         .glass-panel {
-            background: rgba(17, 24, 39, 0.75);
+            background: rgba(17, 24, 39, 0.85);
             backdrop-filter: blur(16px);
             -webkit-backdrop-filter: blur(16px);
-            border: 1px solid rgba(255, 255, 255, 0.1);
-            box-shadow: 0 20px 50px rgba(0, 0, 0, 0.5);
+            border: 1px solid rgba(255, 255, 255, 0.12);
+            box-shadow: 0 20px 50px rgba(0, 0, 0, 0.6);
         }
-        #map { position: absolute; top: 0; bottom: 0; width: 100%; height: 100vh; z-index: 1; }
-        .ui-overlay { position: relative; z-index: 10; pointer-events: none; }
-        .interactive { pointer-events: auto; }
+        #map { position: fixed; top: 0; bottom: 0; width: 100%; height: 100vh; z-index: 1; }
+        .ui-overlay { position: relative; z-index: 10; }
+        /* Scrollbar styling for mobile */
+        ::-webkit-scrollbar { width: 6px; }
+        ::-webkit-scrollbar-thumb { background: #3b82f6; border-radius: 10px; }
     </style>
 </head>
-<body class="overflow-hidden">
+<body class="min-h-screen">
 
-    <!-- 3D Mapbox Layer -->
+    <!-- 3D Map Background -->
     <div id="map"></div>
 
-    <!-- UI Glass Layer -->
-    <div class="ui-overlay min-h-screen flex flex-col justify-between p-4 md:p-6">
+    <!-- Main UI Container (Scrollable) -->
+    <div class="ui-overlay min-h-screen flex flex-col justify-between p-3 md:p-6 space-y-4">
 
-        <!-- Top Navigation -->
-        <header class="glass-panel rounded-2xl p-4 flex flex-wrap justify-between items-center interactive">
+        <!-- Header Bar -->
+        <header class="glass-panel rounded-2xl p-3 md:p-4 flex flex-wrap justify-between items-center gap-3">
             <div class="flex items-center space-x-3">
                 <div class="w-10 h-10 rounded-xl bg-blue-600 flex items-center justify-center font-bold text-xl shadow-lg shadow-blue-500/50">⚡</div>
                 <div>
-                    <h1 class="font-bold text-lg tracking-wide text-white">DRAPPR AI</h1>
-                    <p class="text-xs text-blue-400 font-mono">Global Autonomous Logistics Engine</p>
+                    <h1 class="font-bold text-base md:text-lg tracking-wide text-white">DRAPPR AI</h1>
+                    <p class="text-[10px] md:text-xs text-blue-400 font-mono">Global Autonomous Freight Platform</p>
                 </div>
             </div>
 
-            <!-- Auto-Language & Currency Engine -->
-            <div class="flex items-center space-x-4 mt-2 sm:mt-0">
-                <div class="text-xs bg-gray-800/80 px-3 py-1.5 rounded-lg border border-gray-700 text-gray-300">
-                    📍 <span id="user-location">Auto-Detected: Berlin, GER</span>
-                </div>
-                <select id="lang-selector" onchange="changeLanguage()" class="bg-gray-900 border border-blue-500/50 text-white text-xs rounded-lg p-2 focus:ring-2 focus:ring-blue-500 outline-none cursor-pointer">
-                    <option value="en">🌐 English ($ USD / Miles)</option>
-                    <option value="zh">中文 (Chinese - ¥ RMB / KM)</option>
-                    <option value="de">Deutsch (German - € EUR / KM)</option>
-                    <option value="es">Español (Spanish - € EUR / KM)</option>
-                    <option value="ar">العربية (Arabic - AED / KM)</option>
-                </select>
+            <!-- Driver / Shipper Mode Switcher (InDrive Style) -->
+            <div class="flex items-center space-x-2 bg-gray-900/90 p-1 rounded-xl border border-gray-700">
+                <button id="btn-shipper-mode" onclick="switchMode('shipper')" class="px-3 py-1.5 text-xs font-semibold rounded-lg bg-blue-600 text-white transition">📱 Shipper View</button>
+                <button id="btn-driver-mode" onclick="switchMode('driver')" class="px-3 py-1.5 text-xs font-semibold rounded-lg text-gray-400 hover:text-white transition">🚚 Driver View</button>
             </div>
+
+            <!-- Global Language Selector -->
+            <select id="lang-selector" onchange="changeLanguage()" class="bg-gray-900 border border-blue-500/50 text-white text-xs rounded-lg p-2 outline-none cursor-pointer">
+                <option value="en">🌐 English ($ USD)</option>
+                <option value="tr">🇹🇷 Türkçe (Türk Lirası - ₺)</option>
+                <option value="ar">🇸🇦 العربية (AED / SAR)</option>
+                <option value="zh">🇨🇳 中文 (¥ RMB)</option>
+                <option value="de">🇩🇪 Deutsch (€ EUR)</option>
+                <option value="es">🇪🇸 Español (€ EUR)</option>
+                <option value="fr">🇫🇷 Français (€ EUR)</option>
+                <option value="ru">🇷🇺 Русский (₽ RUB)</option>
+            </select>
         </header>
 
-        <!-- Main Content Panel -->
-        <div class="grid grid-cols-1 lg:grid-cols-12 gap-6 my-auto items-center">
+        <!-- Main Workspace View -->
+        <div class="grid grid-cols-1 lg:grid-cols-12 gap-4 my-auto">
             
-            <!-- Left Glass Card -->
-            <div class="lg:col-span-5 xl:col-span-4 glass-panel rounded-2xl p-6 interactive">
-                <h2 class="text-lg font-semibold text-blue-400 mb-4 flex items-center">
-                    <span class="mr-2">🚛</span> <span id="panel-title">Drappr AI Freight Dispatch</span>
-                </h2>
+            <!-- SHIPPER VIEW PANEL -->
+            <div id="shipper-panel" class="lg:col-span-5 xl:col-span-4 glass-panel rounded-2xl p-4 md:p-6 space-y-4 max-h-[85vh] overflow-y-auto">
+                <div class="flex justify-between items-center border-b border-gray-800 pb-2">
+                    <h2 class="text-base font-semibold text-blue-400 flex items-center">
+                        <span class="mr-2">📦</span> <span id="txt-panel-title">Book Global Freight</span>
+                    </h2>
+                    <span class="text-[10px] bg-emerald-500/20 text-emerald-400 px-2 py-0.5 rounded-full border border-emerald-500/40">InDrive Bidding Active</span>
+                </div>
 
-                <form id="freight-form" onsubmit="calculateFare(event)" class="space-y-4">
+                <form id="freight-form" onsubmit="calculateFare(event)" class="space-y-3 text-xs">
                     <div>
-                        <label class="block text-xs font-medium text-gray-400 mb-1">Pickup Location</label>
-                        <input type="text" id="pickup" value="Shanghai Port, CHN" class="w-full bg-gray-900/90 border border-gray-700 rounded-xl px-4 py-2.5 text-sm text-white focus:border-blue-500 outline-none">
+                        <label class="block text-gray-400 mb-1">Pickup Location (Type Any Global City)</label>
+                        <input type="text" id="pickup" value="Istanbul Port, Turkey" class="w-full bg-gray-900 border border-gray-700 rounded-xl px-3 py-2 text-white focus:border-blue-500 outline-none">
                     </div>
 
                     <div>
-                        <label class="block text-xs font-medium text-gray-400 mb-1">Drop Location</label>
-                        <input type="text" id="drop" value="Berlin Industrial Hub, GER" class="w-full bg-gray-900/90 border border-gray-700 rounded-xl px-4 py-2.5 text-sm text-white focus:border-blue-500 outline-none">
+                        <label class="block text-gray-400 mb-1">Drop Location (Type Any Destination)</label>
+                        <input type="text" id="drop" value="Berlin Logistics Hub, Germany" class="w-full bg-gray-900 border border-gray-700 rounded-xl px-3 py-2 text-white focus:border-blue-500 outline-none">
                     </div>
 
-                    <div class="grid grid-cols-2 gap-3">
+                    <div class="grid grid-cols-2 gap-2">
                         <div>
-                            <label class="block text-xs font-medium text-gray-400 mb-1">Weight (KG / Tons)</label>
-                            <input type="number" id="weight" value="22000" oninput="updateWeightTons()" class="w-full bg-gray-900/90 border border-gray-700 rounded-xl px-3 py-2 text-sm text-white focus:border-blue-500 outline-none">
-                            <span id="weight-tons-display" class="text-[10px] text-blue-400 font-mono">22.0 Metric Tons</span>
+                            <label class="block text-gray-400 mb-1">Weight (KG / Metric Tons)</label>
+                            <input type="number" id="weight" value="18000" oninput="updateWeightTons()" class="w-full bg-gray-900 border border-gray-700 rounded-xl px-3 py-2 text-white focus:border-blue-500 outline-none">
+                            <span id="weight-tons-display" class="text-[10px] text-blue-400 font-mono">18.0 Metric Tons</span>
                         </div>
                         <div>
-                            <label class="block text-xs font-medium text-gray-400 mb-1">Load Type</label>
-                            <select id="load-type" class="w-full bg-gray-900/90 border border-gray-700 rounded-xl px-3 py-2 text-sm text-white focus:border-blue-500 outline-none">
-                                <option value="FCL">Full Container (FCL)</option>
-                                <option value="LTL">Partial Cargo (LTL)</option>
+                            <label class="block text-gray-400 mb-1">Cargo Vehicle</label>
+                            <select id="load-type" class="w-full bg-gray-900 border border-gray-700 rounded-xl px-2 py-2 text-white focus:border-blue-500 outline-none">
+                                <option value="FCL">40ft Heavy Trailer (FCL)</option>
+                                <option value="LTL">Partial Truckload (LTL)</option>
                             </select>
                         </div>
                     </div>
 
-                    <button type="submit" class="w-full bg-blue-600 hover:bg-blue-500 text-white font-medium py-3 rounded-xl shadow-lg shadow-blue-600/30 transition duration-200 text-sm">
-                        ⚡ <span id="btn-calc">Calculate All-Inclusive Fare</span>
+                    <button type="submit" class="w-full bg-blue-600 hover:bg-blue-500 text-white font-medium py-3 rounded-xl shadow-lg shadow-blue-600/30 transition text-xs">
+                        ⚡ Calculate Transparent Fare & Dispatch
                     </button>
                 </form>
 
-                <!-- Fare Calculation Area -->
-                <div class="mt-6 pt-4 border-t border-gray-800 space-y-2 text-xs">
+                <!-- Detailed Dynamic Invoice Breakup -->
+                <div class="bg-gray-900/80 rounded-xl p-3 border border-gray-800 space-y-2 text-xs">
+                    <h3 class="font-bold text-gray-300 border-b border-gray-800 pb-1">📄 Invoice & Cost Breakdown</h3>
                     <div class="flex justify-between text-gray-400">
-                        <span>Base Freight Cost:</span>
-                        <span id="val-base" class="font-mono text-white">$ 3,200</span>
+                        <span>Base Route Rate:</span>
+                        <span id="val-base" class="font-mono text-white">$ 2,700</span>
                     </div>
                     <div class="flex justify-between text-gray-400">
                         <span>Highway Tolls & Fuel:</span>
-                        <span id="val-toll" class="font-mono text-white">$ 540</span>
+                        <span id="val-toll" class="font-mono text-white">$ 410</span>
                     </div>
                     <div class="flex justify-between text-gray-400">
-                        <span>Cross-Border Customs:</span>
-                        <span id="val-customs" class="font-mono text-white">$ 380</span>
+                        <span>Cross-Border Customs Duty:</span>
+                        <span id="val-customs" class="font-mono text-white">$ 290</span>
                     </div>
-                    <div class="flex justify-between text-base font-bold text-blue-400 pt-2 border-t border-gray-700">
-                        <span id="lbl-total">Total Fare:</span>
-                        <span id="val-total" class="font-mono">$ 4,120 USD</span>
+                    <div class="flex justify-between text-sm font-bold text-emerald-400 pt-2 border-t border-gray-700">
+                        <span>All-Inclusive Total:</span>
+                        <span id="val-total" class="font-mono">$ 3,400 USD</span>
                     </div>
                 </div>
 
-                <button class="w-full mt-4 bg-emerald-600 hover:bg-emerald-500 text-white font-medium py-3 rounded-xl shadow-lg shadow-emerald-600/30 transition duration-200 text-sm">
-                    🚀 <span id="btn-book">Instant Dispatch (1-Click)</span>
+                <button onclick="dispatchOrder()" class="w-full bg-emerald-600 hover:bg-emerald-500 text-white font-medium py-3 rounded-xl shadow-lg shadow-emerald-600/30 transition text-xs flex items-center justify-center space-x-2">
+                    <span>📡 Broadcast Order to Nearby Carriers</span>
                 </button>
             </div>
 
-            <!-- Right Predictive Widget -->
-            <div class="lg:col-span-7 xl:col-span-8 flex flex-col justify-end space-y-4">
-                <div class="glass-panel rounded-2xl p-4 max-w-md ml-auto interactive border-l-4 border-emerald-500">
-                    <div class="flex items-center space-x-3">
-                        <div class="text-2xl">🔄</div>
+            <!-- DRIVER / CARRIER VIEW PANEL (Hidden by Default) -->
+            <div id="driver-panel" class="hidden lg:col-span-5 xl:col-span-4 glass-panel rounded-2xl p-4 md:p-6 space-y-4 max-h-[85vh] overflow-y-auto">
+                <div class="flex justify-between items-center border-b border-gray-800 pb-2">
+                    <h2 class="text-base font-semibold text-emerald-400 flex items-center">
+                        <span class="mr-2">🚛</span> <span>Driver Live Radar</span>
+                    </h2>
+                    <span class="text-[10px] bg-blue-500/20 text-blue-400 px-2 py-0.5 rounded-full border border-blue-500/40">GPS Radar Active</span>
+                </div>
+
+                <!-- Driver Job Card -->
+                <div class="bg-gray-900/90 rounded-xl p-4 border border-emerald-500/40 space-y-3">
+                    <div class="flex justify-between items-start">
                         <div>
-                            <h3 class="text-sm font-semibold text-emerald-400">Drappr AI Return Load Saved</h3>
-                            <p class="text-xs text-gray-300 mt-0.5">
-                                Return partial load assigned for <span class="font-bold text-white">Munich, GER</span>. 
-                                Empty Miles Saved: <span class="text-emerald-400 font-bold">$ 850 USD</span>.
-                            </p>
+                            <span class="text-[10px] text-gray-400">NEW SHIPMENT OFFER</span>
+                            <h3 class="font-bold text-white text-sm">Istanbul ➔ Berlin</h3>
                         </div>
+                        <span class="text-emerald-400 font-bold font-mono text-base">$ 3,400</span>
                     </div>
+
+                    <div class="text-xs space-y-1 text-gray-300">
+                        <p>📍 Pickup: <span class="text-white">Istanbul Port, Terminal 2</span></p>
+                        <p>📦 Cargo: <span class="text-white">18.0 Metric Tons (Machinery)</span></p>
+                        <p>🛣️ Distance: <span class="text-blue-400">2,200 KM (Cross-Border)</span></p>
+                    </div>
+
+                    <div class="bg-emerald-950/40 p-2 rounded-lg border border-emerald-800/50 text-[11px] text-emerald-300">
+                        🔄 <b>AI Return Load Match:</b> Partial load available for Munich return ($850 Extra Earnings).
+                    </div>
+
+                    <button onclick="acceptOrderDriver()" class="w-full bg-emerald-600 hover:bg-emerald-500 text-white font-medium py-2.5 rounded-xl shadow-lg shadow-emerald-600/30 transition text-xs">
+                        ✅ Accept Shipment & Start Navigation
+                    </button>
+                </div>
+            </div>
+
+            <!-- Live Status Overlay -->
+            <div class="lg:col-span-7 xl:col-span-8 flex flex-col justify-end">
+                <div id="status-card" class="glass-panel rounded-2xl p-4 max-w-md ml-auto border-l-4 border-blue-500 space-y-1">
+                    <div class="flex justify-between items-center">
+                        <span class="text-xs font-bold text-blue-400" id="status-title">SYSTEM STATUS</span>
+                        <span class="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
+                    </div>
+                    <p class="text-xs text-gray-200" id="status-desc">Ready to route cross-border shipments globally. Select pickup & drop locations above.</p>
                 </div>
             </div>
 
         </div>
 
-        <!-- Footer -->
-        <footer class="text-center text-xs text-gray-500 interactive">
-            &copy; 2026 Drappr AI Global Systems. All Rights Reserved.
+        <footer class="text-center text-[10px] text-gray-500">
+            &copy; 2026 Drappr AI Enterprise Logistics. Real-Time Autonomous Freight Matching System.
         </footer>
 
     </div>
@@ -152,9 +189,9 @@
         const map = new mapboxgl.Map({
             container: 'map',
             style: 'mapbox://styles/mapbox/dark-v11',
-            center: [13.404954, 52.520008],
+            center: [28.9784, 41.0082], // Istanbul Default
             zoom: 4,
-            pitch: 45
+            pitch: 50
         });
 
         function updateWeightTons() {
@@ -168,32 +205,59 @@
             const weight = document.getElementById('weight').value;
             const base = Math.round(weight * 0.15);
             const toll = Math.round(base * 0.15);
-            const customs = Math.round(base * 0.10);
+            const customs = Math.round(base * 0.11);
             const total = base + toll + customs;
 
             document.getElementById('val-base').innerText = `$ ${base.toLocaleString()}`;
             document.getElementById('val-toll').innerText = `$ ${toll.toLocaleString()}`;
             document.getElementById('val-customs').innerText = `$ ${customs.toLocaleString()}`;
             document.getElementById('val-total').innerText = `$ ${total.toLocaleString()} USD`;
+            
+            document.getElementById('status-title').innerText = "FARE CALCULATED";
+            document.getElementById('status-desc').innerText = `Calculated base fare + tolls + customs for ${document.getElementById('pickup').value} to ${document.getElementById('drop').value}.`;
+        }
+
+        function switchMode(mode) {
+            if (mode === 'shipper') {
+                document.getElementById('shipper-panel').classList.remove('hidden');
+                document.getElementById('driver-panel').classList.add('hidden');
+                document.getElementById('btn-shipper-mode').className = "px-3 py-1.5 text-xs font-semibold rounded-lg bg-blue-600 text-white transition";
+                document.getElementById('btn-driver-mode').className = "px-3 py-1.5 text-xs font-semibold rounded-lg text-gray-400 hover:text-white transition";
+            } else {
+                document.getElementById('shipper-panel').classList.add('hidden');
+                document.getElementById('driver-panel').classList.remove('hidden');
+                document.getElementById('btn-driver-mode').className = "px-3 py-1.5 text-xs font-semibold rounded-lg bg-emerald-600 text-white transition";
+                document.getElementById('btn-shipper-mode').className = "px-3 py-1.5 text-xs font-semibold rounded-lg text-gray-400 hover:text-white transition";
+            }
+        }
+
+        function dispatchOrder() {
+            alert("🚀 Order Broadcasted! Switching to Driver View to simulate acceptance...");
+            switchMode('driver');
+        }
+
+        function acceptOrderDriver() {
+            document.getElementById('status-title').innerText = "SHIPMENT ACCEPTED & NAVIGATING";
+            document.getElementById('status-desc').innerText = "Driver #4029 accepted the order. Real-time GPS tracking initiated from Istanbul to Berlin.";
+            alert("✅ Driver accepted order! Live 3D Navigation started.");
         }
 
         function changeLanguage() {
             const lang = document.getElementById('lang-selector').value;
-            const translations = {
-                en: { title: "Drappr AI Freight Dispatch", calc: "Calculate All-Inclusive Fare", book: "Instant Dispatch (1-Click)", total: "Total Fare:" },
-                zh: { title: "Drappr AI 智能调度", calc: "计算全包费用", book: "一键立即发货", total: "总费用:" },
-                de: { title: "Drappr AI KI-Frachtversand", calc: "All-Inclusive Tarif Berechnen", book: "Sofortiger Versand (1-Klick)", total: "Gesamttarif:" },
-                es: { title: "Drappr AI Despacho de Carga", calc: "Calcular Tarifa Todo Incluido", book: "Despacho Inmediato (1-Clic)", total: "Tarifa Total:" },
-                ar: { title: "نظام درابر الذكي للشحن اللوجستي", calc: "حساب التكلفة الإجمالية", book: "الحجز الفوري", total: "إجمالي التكلفة:" }
+            const trans = {
+                en: { title: "Book Global Freight" },
+                tr: { title: "Küresel Nakliye Rezerve Et" },
+                ar: { title: "حجز الشحن اللوجستي العالمي" },
+                zh: { title: "预订全球货运" },
+                de: { title: "Globalen Frachttransport Buchen" },
+                es: { title: "Reservar Carga Global" },
+                fr: { title: "Réserver un Fret Mondial" },
+                ru: { title: "Забронировать международный груз" }
             };
-
-            if (translations[lang]) {
-                document.getElementById('panel-title').innerText = translations[lang].title;
-                document.getElementById('btn-calc').innerText = translations[lang].calc;
-                document.getElementById('btn-book').innerText = translations[lang].book;
-                document.getElementById('lbl-total').innerText = translations[lang].total;
+            if(trans[lang]) {
+                document.getElementById('txt-panel-title').innerText = trans[lang].title;
             }
         }
     </script>
 </body>
-      </html>
+    </html>
