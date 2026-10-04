@@ -1,0 +1,199 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Drappr AI | Global Freight Engine</title>
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Mapbox GL JS -->
+    <script src="https://api.mapbox.com/mapbox-gl-js/v2.15.0/mapbox-gl.js"></script>
+    <link href="https://api.mapbox.com/mapbox-gl-js/v2.15.0/mapbox-gl.css" rel="stylesheet" />
+    <style>
+        body { font-family: 'Inter', sans-serif; background-color: #0b0f19; color: #f3f4f6; }
+        .glass-panel {
+            background: rgba(17, 24, 39, 0.75);
+            backdrop-filter: blur(16px);
+            -webkit-backdrop-filter: blur(16px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            box-shadow: 0 20px 50px rgba(0, 0, 0, 0.5);
+        }
+        #map { position: absolute; top: 0; bottom: 0; width: 100%; height: 100vh; z-index: 1; }
+        .ui-overlay { position: relative; z-index: 10; pointer-events: none; }
+        .interactive { pointer-events: auto; }
+    </style>
+</head>
+<body class="overflow-hidden">
+
+    <!-- 3D Mapbox Layer -->
+    <div id="map"></div>
+
+    <!-- UI Glass Layer -->
+    <div class="ui-overlay min-h-screen flex flex-col justify-between p-4 md:p-6">
+
+        <!-- Top Navigation -->
+        <header class="glass-panel rounded-2xl p-4 flex flex-wrap justify-between items-center interactive">
+            <div class="flex items-center space-x-3">
+                <div class="w-10 h-10 rounded-xl bg-blue-600 flex items-center justify-center font-bold text-xl shadow-lg shadow-blue-500/50">⚡</div>
+                <div>
+                    <h1 class="font-bold text-lg tracking-wide text-white">DRAPPR AI</h1>
+                    <p class="text-xs text-blue-400 font-mono">Global Autonomous Logistics Engine</p>
+                </div>
+            </div>
+
+            <!-- Auto-Language & Currency Engine -->
+            <div class="flex items-center space-x-4 mt-2 sm:mt-0">
+                <div class="text-xs bg-gray-800/80 px-3 py-1.5 rounded-lg border border-gray-700 text-gray-300">
+                    📍 <span id="user-location">Auto-Detected: Berlin, GER</span>
+                </div>
+                <select id="lang-selector" onchange="changeLanguage()" class="bg-gray-900 border border-blue-500/50 text-white text-xs rounded-lg p-2 focus:ring-2 focus:ring-blue-500 outline-none cursor-pointer">
+                    <option value="en">🌐 English ($ USD / Miles)</option>
+                    <option value="zh">中文 (Chinese - ¥ RMB / KM)</option>
+                    <option value="de">Deutsch (German - € EUR / KM)</option>
+                    <option value="es">Español (Spanish - € EUR / KM)</option>
+                    <option value="ar">العربية (Arabic - AED / KM)</option>
+                </select>
+            </div>
+        </header>
+
+        <!-- Main Content Panel -->
+        <div class="grid grid-cols-1 lg:grid-cols-12 gap-6 my-auto items-center">
+            
+            <!-- Left Glass Card -->
+            <div class="lg:col-span-5 xl:col-span-4 glass-panel rounded-2xl p-6 interactive">
+                <h2 class="text-lg font-semibold text-blue-400 mb-4 flex items-center">
+                    <span class="mr-2">🚛</span> <span id="panel-title">Drappr AI Freight Dispatch</span>
+                </h2>
+
+                <form id="freight-form" onsubmit="calculateFare(event)" class="space-y-4">
+                    <div>
+                        <label class="block text-xs font-medium text-gray-400 mb-1">Pickup Location</label>
+                        <input type="text" id="pickup" value="Shanghai Port, CHN" class="w-full bg-gray-900/90 border border-gray-700 rounded-xl px-4 py-2.5 text-sm text-white focus:border-blue-500 outline-none">
+                    </div>
+
+                    <div>
+                        <label class="block text-xs font-medium text-gray-400 mb-1">Drop Location</label>
+                        <input type="text" id="drop" value="Berlin Industrial Hub, GER" class="w-full bg-gray-900/90 border border-gray-700 rounded-xl px-4 py-2.5 text-sm text-white focus:border-blue-500 outline-none">
+                    </div>
+
+                    <div class="grid grid-cols-2 gap-3">
+                        <div>
+                            <label class="block text-xs font-medium text-gray-400 mb-1">Weight (KG / Tons)</label>
+                            <input type="number" id="weight" value="22000" oninput="updateWeightTons()" class="w-full bg-gray-900/90 border border-gray-700 rounded-xl px-3 py-2 text-sm text-white focus:border-blue-500 outline-none">
+                            <span id="weight-tons-display" class="text-[10px] text-blue-400 font-mono">22.0 Metric Tons</span>
+                        </div>
+                        <div>
+                            <label class="block text-xs font-medium text-gray-400 mb-1">Load Type</label>
+                            <select id="load-type" class="w-full bg-gray-900/90 border border-gray-700 rounded-xl px-3 py-2 text-sm text-white focus:border-blue-500 outline-none">
+                                <option value="FCL">Full Container (FCL)</option>
+                                <option value="LTL">Partial Cargo (LTL)</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <button type="submit" class="w-full bg-blue-600 hover:bg-blue-500 text-white font-medium py-3 rounded-xl shadow-lg shadow-blue-600/30 transition duration-200 text-sm">
+                        ⚡ <span id="btn-calc">Calculate All-Inclusive Fare</span>
+                    </button>
+                </form>
+
+                <!-- Fare Calculation Area -->
+                <div class="mt-6 pt-4 border-t border-gray-800 space-y-2 text-xs">
+                    <div class="flex justify-between text-gray-400">
+                        <span>Base Freight Cost:</span>
+                        <span id="val-base" class="font-mono text-white">$ 3,200</span>
+                    </div>
+                    <div class="flex justify-between text-gray-400">
+                        <span>Highway Tolls & Fuel:</span>
+                        <span id="val-toll" class="font-mono text-white">$ 540</span>
+                    </div>
+                    <div class="flex justify-between text-gray-400">
+                        <span>Cross-Border Customs:</span>
+                        <span id="val-customs" class="font-mono text-white">$ 380</span>
+                    </div>
+                    <div class="flex justify-between text-base font-bold text-blue-400 pt-2 border-t border-gray-700">
+                        <span id="lbl-total">Total Fare:</span>
+                        <span id="val-total" class="font-mono">$ 4,120 USD</span>
+                    </div>
+                </div>
+
+                <button class="w-full mt-4 bg-emerald-600 hover:bg-emerald-500 text-white font-medium py-3 rounded-xl shadow-lg shadow-emerald-600/30 transition duration-200 text-sm">
+                    🚀 <span id="btn-book">Instant Dispatch (1-Click)</span>
+                </button>
+            </div>
+
+            <!-- Right Predictive Widget -->
+            <div class="lg:col-span-7 xl:col-span-8 flex flex-col justify-end space-y-4">
+                <div class="glass-panel rounded-2xl p-4 max-w-md ml-auto interactive border-l-4 border-emerald-500">
+                    <div class="flex items-center space-x-3">
+                        <div class="text-2xl">🔄</div>
+                        <div>
+                            <h3 class="text-sm font-semibold text-emerald-400">Drappr AI Return Load Saved</h3>
+                            <p class="text-xs text-gray-300 mt-0.5">
+                                Return partial load assigned for <span class="font-bold text-white">Munich, GER</span>. 
+                                Empty Miles Saved: <span class="text-emerald-400 font-bold">$ 850 USD</span>.
+                            </p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+        </div>
+
+        <!-- Footer -->
+        <footer class="text-center text-xs text-gray-500 interactive">
+            &copy; 2026 Drappr AI Global Systems. All Rights Reserved.
+        </footer>
+
+    </div>
+
+    <script>
+        mapboxgl.accessToken = 'pk.eyJ1IjoibWFwYm94IiwiYSI6ImNpejY4M29iazA2Z2gycXA4N2pmbDZmangifQ.-g_vE53SD2WrJ6t6A7-2ng';
+        
+        const map = new mapboxgl.Map({
+            container: 'map',
+            style: 'mapbox://styles/mapbox/dark-v11',
+            center: [13.404954, 52.520008],
+            zoom: 4,
+            pitch: 45
+        });
+
+        function updateWeightTons() {
+            const kg = document.getElementById('weight').value;
+            const tons = (kg / 1000).toFixed(1);
+            document.getElementById('weight-tons-display').innerText = `${tons} Metric Tons`;
+        }
+
+        function calculateFare(e) {
+            e.preventDefault();
+            const weight = document.getElementById('weight').value;
+            const base = Math.round(weight * 0.15);
+            const toll = Math.round(base * 0.15);
+            const customs = Math.round(base * 0.10);
+            const total = base + toll + customs;
+
+            document.getElementById('val-base').innerText = `$ ${base.toLocaleString()}`;
+            document.getElementById('val-toll').innerText = `$ ${toll.toLocaleString()}`;
+            document.getElementById('val-customs').innerText = `$ ${customs.toLocaleString()}`;
+            document.getElementById('val-total').innerText = `$ ${total.toLocaleString()} USD`;
+        }
+
+        function changeLanguage() {
+            const lang = document.getElementById('lang-selector').value;
+            const translations = {
+                en: { title: "Drappr AI Freight Dispatch", calc: "Calculate All-Inclusive Fare", book: "Instant Dispatch (1-Click)", total: "Total Fare:" },
+                zh: { title: "Drappr AI 智能调度", calc: "计算全包费用", book: "一键立即发货", total: "总费用:" },
+                de: { title: "Drappr AI KI-Frachtversand", calc: "All-Inclusive Tarif Berechnen", book: "Sofortiger Versand (1-Klick)", total: "Gesamttarif:" },
+                es: { title: "Drappr AI Despacho de Carga", calc: "Calcular Tarifa Todo Incluido", book: "Despacho Inmediato (1-Clic)", total: "Tarifa Total:" },
+                ar: { title: "نظام درابر الذكي للشحن اللوجستي", calc: "حساب التكلفة الإجمالية", book: "الحجز الفوري", total: "إجمالي التكلفة:" }
+            };
+
+            if (translations[lang]) {
+                document.getElementById('panel-title').innerText = translations[lang].title;
+                document.getElementById('btn-calc').innerText = translations[lang].calc;
+                document.getElementById('btn-book').innerText = translations[lang].book;
+                document.getElementById('lbl-total').innerText = translations[lang].total;
+            }
+        }
+    </script>
+</body>
+      </html>
